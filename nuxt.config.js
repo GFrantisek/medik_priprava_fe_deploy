@@ -1,7 +1,7 @@
 export default {
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    title: 'frontend',
+    title: 'medik priprava',
     htmlAttrs: {
       lang: 'en'
     },
@@ -35,24 +35,47 @@ export default {
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
+    // https://go.nuxtjs.dev/bootstrap
+    'bootstrap-vue/nuxt',
+    // https://go.nuxtjs.dev/axios
     '@nuxtjs/axios',
-    '@nuxtjs/auth',
-
+    '@nuxtjs/auth-next',
   ],
 
   axios: {
-    baseURL: 'http://127.0.0.1:3333/api'
+    baseURL: 'http://127.0.0.1:8081/api'
   },
 
   auth: {
     strategies: {
       local: {
+        scheme: 'refresh',
+        token: {
+          property: 'access',
+          global: true,
+          maxAge: 1800,
+        },
+        refreshToken: {
+          property: 'refresh',
+          data: 'refresh',
+          maxAge: 60 * 60 * 24
+        },
+        user: {
+          property: 'user',
+        },
         endpoints: {
-          login: { url: 'login', method: 'post', propertyName: 'data.token' },
-          user: { url: 'me', method: 'get', propertyName: 'data' },
-          logout: false
-        }
+          login: { url: '/auth/login', method: 'post' },
+          logout: { url: '/auth/logout', method: 'post' },
+          refresh: { url: '/auth/refresh', method: 'post' },
+          user: { url: '/auth/user', method: 'get' }
+        },
       }
+    },
+    redirect: {
+      login: '/auth/login',
+      logout: '/',
+      callback: '/auth/login',
+      home: '/'
     }
   },
 

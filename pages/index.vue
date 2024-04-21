@@ -11,7 +11,8 @@
       <NuxtLink to="/" class="nav-item">1. LF UK</NuxtLink>
       <NuxtLink to="/" class="nav-item">2. LF UK</NuxtLink>
       <NuxtLink to="/" class="nav-item">3. LF UK</NuxtLink>
-      <NuxtLink to="/login" class="nav-item login">Prihlásiť sa</NuxtLink>
+      <NuxtLink :to="{name: 'auth-register'}">Register</NuxtLink>
+      <NuxtLink :to="{name: 'auth-login'}">Login</NuxtLink>
     </div>
 
     <div class="page-title">
