@@ -74,15 +74,28 @@ export default {
       this.$router.push('/');
     },
     fetchQuestions() {
-      const params = this.$route.query; // Access route query parameters
-      fetch(`https://medik-cloud-i4zdozbjjq-lm.a.run.app/api/get_test_questions/?numQuestions=${params.numQuestions}&startQuestion=${params.startQuestion}&endQuestion=${params.endQuestion}`)
+      const params = this.$route.query;
+      const query = new URLSearchParams({
+        numQuestions: params.numQuestions,
+        startQuestion: params.startQuestion,
+        endQuestion: params.endQuestion,
+        numAnswers: params.numAnswers
+      }).toString();
+      const pocet_odpovedi = params.numAnswers
+
+      //deployold fetch(`https://medik-cloud-i4zdozbjjq-lm.a.run.app/api/get_test_questions/?numQuestions=${params.numQuestions}&startQuestion=${params.startQuestion}&endQuestion=${params.endQuestion}`)
+      //local fetch(`http://127.0.0.1:8081/api/get_test_questions/?numQuestions=${params.numQuestions}&startQuestion=${params.startQuestion}&endQuestion=${params.endQuestion}`)
+      //          url: 'https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app/generate-pdf/',
+
+      //fetch(`http://127.0.0.1:8081/api/get_test_questions/?${query}`)
+      fetch(`https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app/api/get_test_questions/?${query}`)
         .then(response => response.json())
         .then(data => {
           this.questions = Object.entries(data).map(([key, value]) => ({
             ...value,
             id: key
           }));
-          this.maxPoints = this.questions.length * 4;
+          this.maxPoints = this.questions.length * pocet_odpovedi;
         })
         .catch(error => {
           console.error('Fetching questions failed:', error);
@@ -129,27 +142,69 @@ export default {
       this.points = this.maxPoints - this.incorrectCount;
       this.percentage = ((this.points / this.maxPoints) * 100).toFixed(2);
     },
-    downloadPdf() {
-      const params = this.$route.query;
-      const queryParams = new URLSearchParams(params).toString();
-      const url = `https://medik-cloud-i4zdozbjjq-lm.a.run.app/generate-pdf/?${queryParams}`;
+    async downloadPdf() {
+      try {
+        // Create an array of questions with their answers in a format suitable for your backend
+        const questionsData = this.questions.map(question => ({
+          questionText: question.text,
+          answers: question.answers.map(answer => ({
+            answerText: answer[1], // assuming the text is the second element
+            isCorrect: answer[2]  // assuming the correctness flag is the third element
+          }))
+        }));
 
-      fetch(url, {
-        method: 'GET',
-      })
-        .then(response => response.blob())
-        .then(blob => {
-          const fileUrl = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = fileUrl;
-          a.download = 'test.pdf';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(fileUrl);
-        })
-        .catch(error => console.error('Error downloading PDF:', error));
+        // Make a request to generate a PDF with this data
+        const response = await this.$axios.post(
+          'https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app/generate-pdf/',
+          { questions: questionsData },
+          { responseType: 'blob' }
+        );
+
+        // Create a Blob from the PDF binary data
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'test_questions.pdf');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error during PDF generation or download:', error);
+      }
     },
+
+    /*
+    async generateTest() {
+      try {
+        const response = await this.$axios({
+          //url: 'https://medik-cloud-i4zdozbjjq-lm.a.run.app/generate-pdf/', //deploy old
+          //url: 'http://127.0.0.1:8081/generate-pdf/',                                        //localhost
+          url: 'https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app/generate-pdf/',
+          method: 'GET',
+          responseType: 'blob',
+          params: {
+            numQuestions: this.numQuestions,
+            startQuestion: this.startQuestion,
+            endQuestion: this.endQuestion,
+            numAnswers: this.numAnswers,
+            categories: this.checkedCategories.join(',')
+          },
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'tests_package.zip');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error during PDF generation or download:', error);
+      }
+    },
+     */
     scrollToQuestion(index) {
       const questionRef = this.$refs['question-' + index][0];
       if (questionRef) {

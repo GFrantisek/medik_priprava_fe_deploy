@@ -11,8 +11,18 @@
       <NuxtLink to="/" class="nav-item">1. LF UK</NuxtLink>
       <NuxtLink to="/" class="nav-item">2. LF UK</NuxtLink>
       <NuxtLink to="/" class="nav-item">3. LF UK</NuxtLink>
-      <NuxtLink :to="{name: 'auth-register'}">Register</NuxtLink>
-      <NuxtLink :to="{name: 'auth-login'}">Login</NuxtLink>
+      <div>
+        <!-- Check if user is authenticated -->
+        <div v-if="$auth.loggedIn">
+          <!-- Display logout button if user is logged in -->
+          <button @click="logout">Logout</button>
+        </div>
+        <div v-else>
+          <!-- Display login and register links if user is not logged in -->
+          <nuxt-link to="/auth/login">Login</nuxt-link>
+          <nuxt-link to="/auth/register">Register</nuxt-link>
+        </div>
+      </div>
     </div>
 
     <div class="page-title">
@@ -64,12 +74,10 @@
               <label for="to-question-id">Výber oblastí:</label>
             </div>
             <div class="custom-categories">
-              <input type="checkbox" id="vseoBio" value="vseobecna-biologia" v-model="checkedCategories">
-              <label for="vseoBio">Všeobecná biológia</label>
-              <input type="checkbox" id="cellBio" value="biologia-bunky" v-model="checkedCategories">
-              <label for="cellBio">Bunková biológia</label>
-              <input type="checkbox" id="human" value="human" v-model="checkedCategories">
-              <label for="human">Človek</label>
+              <div v-for="(category, index) in allCategories" :key="index">
+                <input type="checkbox" :id="`category-${index}`" :value="category" v-model="checkedCategories">
+                <label :for="`category-${index}`">{{ category }}</label>
+              </div>
             </div>
 
             <button @click="generateInteractiveTest" class="custom-test-btn">VLASTNÝ TEST</button>
@@ -84,24 +92,53 @@
 
 <script>
 export default {
+  computed:{
+    isAuthenticated(){
+      return this.$auth.loggedIn
+    },
+
+    user(){
+      return this.$auth.user
+    }
+  },
   data() {
     return {
       numQuestions: 5,
       startQuestion: 1,
       endQuestion: 10,
+      numAnswers: 4,
+      checkedCategories: [],
+      allCategories: [
+        'Všeobecné informácie', 'Bunková biológia', 'DNA a RNA', 'Genetika',
+        'Virológia a baktérie', 'Rastliny a huby', 'Živočíchy', 'Človek',
+        'Ekosystém a Zem', 'Populačné choroby'
+      ],
+
     };
   },
   methods: {
+    async logout(){
+      try {
+        let response = await this.$auth.logout()
+        this.$router.replace({name: 'auth-login'})
+      } catch (error) {
+        console.log(error)
+      }
+    },
     async generateTest() {
       try {
         const response = await this.$axios({
-          url: 'https://medik-cloud-i4zdozbjjq-lm.a.run.app/generate-pdf/',
+          //url: 'https://medik-cloud-i4zdozbjjq-lm.a.run.app/generate-pdf/', //deploy old
+          //url: 'http://127.0.0.1:8081/generate-pdf/',                                        //localhost
+          url: 'https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app/generate-pdf/',
           method: 'GET',
           responseType: 'blob',
           params: {
             numQuestions: this.numQuestions,
             startQuestion: this.startQuestion,
             endQuestion: this.endQuestion,
+            numAnswers: this.numAnswers,
+            categories: this.checkedCategories.join(',')
           },
         });
 
@@ -124,6 +161,8 @@ export default {
           numQuestions: this.numQuestions.toString(),
           startQuestion: this.startQuestion.toString(),
           endQuestion: this.endQuestion.toString(),
+          numAnswers: this.numAnswers.toString(),
+          categories: this.checkedCategories.join(',')
         }
       });
     },
