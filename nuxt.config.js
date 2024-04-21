@@ -44,7 +44,7 @@ export default {
 
   axios: {
     // local baseURL: 'http://127.0.0.1:8081/api'
-    baseURL: 'https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app'
+    baseURL: 'https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app/api'
   },
 
   auth: {
