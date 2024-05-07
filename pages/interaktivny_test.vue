@@ -96,8 +96,6 @@ export default {
         .then(data => {
           // console.log("Data received from API:", data);
           this.questions = data.questions; // Ensure this aligns with the received JSON structure
-          console.log(this.questions)
-          console.log("NIGGER",this.questions)
           this.maxPoints = this.questions.reduce((sum, question) => sum + question.answers.length, 0);
         })
         .catch(error => {
