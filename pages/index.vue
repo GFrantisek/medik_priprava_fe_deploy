@@ -103,9 +103,9 @@ export default {
   },
   data() {
     return {
-      numQuestions: 5,
+      numQuestions: 1,
       startQuestion: 1,
-      endQuestion: 10,
+      endQuestion: 1500,
       numAnswers: 4,
       checkedCategories: [],
       allCategories: [
