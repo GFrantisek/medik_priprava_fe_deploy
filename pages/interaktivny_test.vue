@@ -9,10 +9,10 @@
       <nav class="question-nav">
         <button
           v-for="(question, index) in questions"
-          :key="question.id"
+          :key="question.question_id"
           class="question-nav-item"
           @click="scrollToQuestion(index)">
-          Otázka {{ question.id }}
+          Otázka {{ question.question_id }}
         </button>
       </nav>
     </aside>
@@ -22,18 +22,17 @@
         :key="index"
         class="question-block"
         :ref="'question-' + index">
-        <p class="question-text">{{ question.text }}</p>
+        <p class="question-text">{{ question.question_text }}</p>
         <ul class="answers-list">
-          <li v-for="answer in question.answers" :key="answer[0]"
+          <li v-for="answer in question.answers" :key="answer.answer_id"
               :class="{
-          'answer': true,
-          //'correct': submissionAttempted && correctAnswers[index][answer[0]] === true,
-          'incorrect': submissionAttempted && correctAnswers[index][answer[0]] === false
-        }">
+      'answer': true,
+      'incorrect': submissionAttempted && !correctAnswers[index][answer.answer_id]
+    }">
             <label>
               <input type="checkbox" :value="answer" @change="selectAnswer(index, answer)"
                      :disabled="submissionAttempted">
-              {{ answer[1] }}
+              {{ answer.answer_text }}
             </label>
           </li>
         </ul>
@@ -43,14 +42,20 @@
         <button class="download-pdf-button" @click="downloadPdf">Download PDF </button>
       </div>
       <div v-if="submissionAttempted" id="incorrectCountDisplay%">
-        Your points: {{ points }} / {{ maxPoints }} ( {{percentage}} % )
+        <span v-if="points < 0"> Your points: {{ points }} / {{ maxPoints }} 😢 Získal si záporný počet bodov 😢 0%</span>
+        <span v-else-if="percentage.toFixed(2) > 80"> Tvoje bodíky: {{ points }} / {{ maxPoints }} ({{ percentage.toFixed(2) }} %) Good job little monke, medicina is here  🧑‍⚕️   </span>
+        <span v-else>Your points: {{ points }} / {{ maxPoints }} ({{ percentage.toFixed(2) }} %)</span>
       </div>
-      <!-- <div class="progress-bar" :style="{ width: percentage + '%' }"> </div>-->
+      <div>
+        <button v-if="submissionAttempted" class="refresh-button" @click="refreshTest">Refresh</button>
+      </div>
     </main>
   </div>
 </template>
 
 <script>
+import {componentsPlugin} from "bootstrap-vue";
+
 export default {
   name: 'InteraktivnyTest',
   data() {
@@ -62,8 +67,9 @@ export default {
       points: 0,
       maxPoints: 0,
       percentage: 0,
-      incorrectCount: 0
-
+      incorrectCount: 0,
+      incorrectDetails: [],  // New array to store details of incorrect answers
+      listofcor: []
     };
   },
   mounted() {
@@ -76,102 +82,139 @@ export default {
     fetchQuestions() {
       const params = this.$route.query;
       const query = new URLSearchParams({
-        numQuestions: params.numQuestions,
-        startQuestion: params.startQuestion,
-        endQuestion: params.endQuestion,
-        numAnswers: params.numAnswers
+        numQuestions: params.numQuestions || 100,
+        startQuestion: params.startQuestion || 1,
+        endQuestion: params.endQuestion || 1500,
+        numAnswers: params.numAnswers || 4,
+        categories: params.categories || ''
       }).toString();
-      const pocet_odpovedi = params.numAnswers
 
-      //deployold fetch(`https://medik-cloud-i4zdozbjjq-lm.a.run.app/api/get_test_questions/?numQuestions=${params.numQuestions}&startQuestion=${params.startQuestion}&endQuestion=${params.endQuestion}`)
-      //local fetch(`http://127.0.0.1:8081/api/get_test_questions/?numQuestions=${params.numQuestions}&startQuestion=${params.startQuestion}&endQuestion=${params.endQuestion}`)
-      //          url: 'https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app/generate-pdf/',
+      console.log("Fetching with parameters:", query);
 
-      //fetch(`http://127.0.0.1:8081/api/get_test_questions/?${query}`)
-      fetch(`https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app/api/get_test_questions/?${query}`)
+      fetch(`https://medik-cloud-deploy-fast-xxtgwkr47a-lm.a.run.app/api/get_test_questions/?${query}`)
         .then(response => response.json())
         .then(data => {
-          this.questions = Object.entries(data).map(([key, value]) => ({
-            ...value,
-            id: key
-          }));
-          this.maxPoints = this.questions.length * pocet_odpovedi;
+          // console.log("Data received from API:", data);
+          this.questions = data.questions; // Ensure this aligns with the received JSON structure
+          console.log(this.questions)
+          console.log("NIGGER",this.questions)
+          this.maxPoints = this.questions.reduce((sum, question) => sum + question.answers.length, 0);
         })
         .catch(error => {
-          console.error('Fetching questions failed:', error);
+          // console.error('Fetching questions failed:', error);
         });
     },
     selectAnswer(questionIndex, answer) {
+
+      // Initialize the answer array for the question if it does not exist
       if (!this.selectedAnswers[questionIndex]) {
-        this.$set(this.selectedAnswers, questionIndex, [answer]);
-      } else {
-        const answerIndex = this.selectedAnswers[questionIndex].findIndex(selected => selected[0] === answer[0]);
-        if (answerIndex > -1) {
-          this.selectedAnswers[questionIndex].splice(answerIndex, 1);
-          this.selectedAnswers[questionIndex] = [...this.selectedAnswers[questionIndex]];
-        } else {
-          this.selectedAnswers[questionIndex].push(answer);
-        }
+        this.$set(this.selectedAnswers, questionIndex, []);
       }
+
+      // Check if the answer is already selected
+      const currentAnswers = this.selectedAnswers[questionIndex];
+      const answerIndex = currentAnswers.findIndex(a => a.answer_id === answer.answer_id);
+
+      // If the answer is already selected, remove it (toggle off)
+      if (answerIndex > -1) {
+        currentAnswers.splice(answerIndex, 1);
+      } else {
+        // Otherwise, add the answer to the selected list (toggle on)
+        currentAnswers.push(answer);
+      }
+
+      // Since we are modifying an array directly, we need to ensure the changes are reactive
+      this.$set(this.selectedAnswers, questionIndex, [...currentAnswers]);
     },
+
     submitAnswers() {
       this.submissionAttempted = true;
-      this.incorrectCount = 0;
+      this.points = 0;  // Start with zero points
+      this.correctAnswers = {};  // Reset for new submission evaluations
+      this.incorrectDetails = [];  // Reset the incorrect details
 
       this.questions.forEach((question, questionIndex) => {
-        this.correctAnswers[questionIndex] = {};
+        const selectedIds = (this.selectedAnswers[questionIndex] || []).map(a => a.answer_id);
+        this.correctAnswers[questionIndex] = {};  // Initialize correctness tracking for this question
 
-        question.answers.forEach((answer) => {
-          const isSelected = this.selectedAnswers[questionIndex]?.includes(answer);
-          const isCorrect = isSelected === answer[2];
-          this.correctAnswers[questionIndex][answer[0]] = isCorrect;
-          if(!isCorrect && isSelected) this.incorrectCount++;
-        });
+        question.answers.forEach(answer => {
+          // Check if the answer ID is in the selected answers
+          const isSelected = selectedIds.includes(answer.answer_id);
+          const isCorrect = answer.is_correct;
 
-        const unselectedAnswers = question.answers.filter(
-          (answer) => !(this.selectedAnswers[questionIndex]?.includes(answer))
-        );
-        unselectedAnswers.forEach((answer) => {
-          if (!answer[2]) {
-            this.correctAnswers[questionIndex][answer[0]] = true;
-          }else{
-            this.incorrectCount++;
+          // Record if the selected answer is correct or not
+          this.correctAnswers[questionIndex][answer.answer_id] = isSelected === isCorrect;
+
+          if (isCorrect) {
+            if (isSelected) {
+              this.points++;  // Gain a point for selecting a correct answer
+            } else {
+              this.points--;  // Lose a point for not selecting a correct answer
+            }
+          } else {
+            if (isSelected) {
+              this.points--;  // Lose a point for selecting a wrong answer
+            } else {
+              this.points++;  // Gain a point for not selecting a wrong answer
+            }
+          }
+
+          // Collect details of incorrect answers for analysis
+          if (!this.correctAnswers[questionIndex][answer.answer_id]) {
+            this.incorrectDetails.push({
+              questionId: question.id,
+              answerId: answer.answer_id
+            });
           }
         });
       });
-      this.points = this.maxPoints - this.incorrectCount;
-      this.percentage = ((this.points / this.maxPoints) * 100).toFixed(2);
+
+      this.percentage = (this.points / this.maxPoints) * 100;  // Calculate the percentage score
     },
+
     async downloadPdf() {
       try {
-        // Create an array of questions with their answers in a format suitable for your backend
-        const questionsData = this.questions.map(question => ({
-          questionText: question.text,
-          answers: question.answers.map(answer => ({
-            answerText: answer[1], // assuming the text is the second element
-            isCorrect: answer[2]  // assuming the correctness flag is the third element
-          }))
-        }));
+        const questionsData = {
+          questions: this.questions
+        };
 
-        // Make a request to generate a PDF with this data
-        const response = await this.$axios.post(
-          'https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app/generate-pdf/',
-          { questions: questionsData },
-          { responseType: 'blob' }
-        );
+        console.log(JSON.stringify(questionsData))
 
-        // Create a Blob from the PDF binary data
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const response = await fetch('https://medik-cloud-deploy-fast-xxtgwkr47a-lm.a.run.app/generate_pdf_new_method/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(questionsData),
+        });
+
+        if (!response.ok) throw new Error('Network response was not ok.');
+
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'test_questions.pdf');
+        link.href = downloadUrl;
+        link.setAttribute('download', 'questions.pdf');
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
       } catch (error) {
         console.error('Error during PDF generation or download:', error);
       }
+    },
+
+    refreshTest() {
+      this.selectedAnswers = {};  // Clear selected answers
+      this.submissionAttempted = false;  // Allow re-submission
+      this.correctAnswers = {};  // Clear correctness tracking
+      this.points = 0;  // Reset points
+      this.percentage = 0;  // Reset percentage
+      this.incorrectDetails = [];  // Clear details of incorrect answers
+
+      this.fetchQuestions();
+
+
     },
 
     /*
@@ -218,6 +261,14 @@ export default {
 
 <style>
 
+.answer.incorrect {
+  background-color: #f8d7da; /* Light red background for incorrect answers */
+  color: #721c24; /* Dark red text color for better readability */
+}
+
+.incorrect-question {
+  background-color: #f8d7da; /* Light red for incorrect questions */
+}
 .home-button {
   padding: 10px;
   background: #7C4DFF;
@@ -236,6 +287,10 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: sticky;
+  top: 0; /* Adjust this value based on your header height or desired spacing */
+  height: 100vh; /* Optional: Makes the sidebar take full height of the viewport */
+  overflow-y: auto; /* Enables scrolling within the sidebar if items exceed the viewport height */
 }
 
 .question-nav {
@@ -330,4 +385,20 @@ export default {
 .download-pdf-button:hover {
   background-color: #6841c9;
 }
+
+.refresh-button {
+  padding: 10px 20px;
+  background-color: #4CAF50; /* Green background */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: 5px; /* Space it out from other buttons */
+}
+
+.refresh-button:hover {
+  background-color: #45a049; /* Darker green on hover */
+}
+
 </style>

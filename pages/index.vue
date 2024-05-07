@@ -129,8 +129,7 @@ export default {
       try {
         const response = await this.$axios({
           //url: 'https://medik-cloud-i4zdozbjjq-lm.a.run.app/generate-pdf/', //deploy old
-          //url: 'http://127.0.0.1:8081/generate-pdf/',                                        //localhost
-          url: 'https://medik-cloud-deploy-xxtgwkr47a-uc.a.run.app/generate-pdf/',
+          url: 'https://medik-cloud-deploy-fast-xxtgwkr47a-lm.a.run.app/generate-pdf/',                                        //localhost
           method: 'GET',
           responseType: 'blob',
           params: {
