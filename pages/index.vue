@@ -64,7 +64,7 @@
 
         <div class="test-column">
           <div class="test-container">
-            <button @click="generateInteractiveTest" class="standard-test-btn">ŠTANDARDNÝ TEST</button>
+            <button @click="generateStandardTestButton" class="standard-test-btn">ŠTANDARDNÝ TEST</button>
             <button @click="generateStandardTest">Stiahnuť ako pdf</button>
             <div class="custom-test">
               <div class="custom-test-title">alebo</div>
@@ -220,7 +220,29 @@
         }
 
       },
+
+      generateStandardTestButton() {
+        const normalizedNumQuestions = 100;
+        const normalizedNumAnswers = 4;
+        const normalizedStartQuestion = 1;
+        const normalizedEndQuestion = 1500;
+
+        this.$router.push({
+          path: '/interaktivny_test',
+          query: {
+            numQuestions: normalizedNumQuestions.toString(),
+            startQuestion: normalizedStartQuestion.toString(),
+            endQuestion: normalizedEndQuestion.toString(),
+            numAnswers: normalizedNumAnswers.toString(),
+            categories: ''
+          }
+        });
+
+      },
+
+
     },
+
 
   };
   </script>
