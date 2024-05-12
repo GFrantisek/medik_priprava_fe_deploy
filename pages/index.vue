@@ -85,7 +85,6 @@
                   <label :for="`category-${index}`">{{ category }}</label>
                 </div>
               </div>
-
               <button @click="generateInteractiveTest" class="custom-test-btn">VLASTNÝ TEST</button>
               <button @click="generateTest">Stiahnuť ako pdf</button>
             </div>
