@@ -38,12 +38,12 @@
         </ul>
       </div>
       <div class="submit-wrapper">
-        <button class="submit-button" @click="submitAnswers" :disabled="submissionAttempted">Submit Test</button>
+        <button class="submit-button" @click="submitAnswers(); storeData();" :disabled="submissionAttempted">Submit Test</button>
         <button class="download-pdf-button" @click="downloadPdf">Download PDF </button>
       </div>
       <div v-if="submissionAttempted" id="incorrectCountDisplay%">
         <span v-if="points < 0"> Your points: {{ points }} / {{ maxPoints }} 😢 Získal si záporný počet bodov 😢 0%</span>
-        <span v-else-if="percentage.toFixed(2) > 80"> Tvoje bodíky: {{ points }} / {{ maxPoints }} ({{ percentage.toFixed(2) }} %) Good job little monke, medicina is here  🧑‍⚕️   </span>
+        <span v-else-if="percentage.toFixed(2) > 80"> Tvoje bodíky: {{ points }} / {{ maxPoints }} ({{ percentage.toFixed(2) }} %) Good job, medicina is here  🧑‍⚕️   </span>
         <span v-else>Your points: {{ points }} / {{ maxPoints }} ({{ percentage.toFixed(2) }} %)</span>
       </div>
       <div>
@@ -55,11 +55,14 @@
 
 <script>
 import {componentsPlugin} from "bootstrap-vue";
+import { v4 as uuidv4 } from 'uuid';
 
 export default {
   name: 'InteraktivnyTest',
   data() {
     return {
+      userId: null,
+      testId: uuidv4(),
       questions: [],
       selectedAnswers: {},
       submissionAttempted: false,
@@ -69,11 +72,14 @@ export default {
       percentage: 0,
       incorrectCount: 0,
       incorrectDetails: [],  // New array to store details of incorrect answers
-      listofcor: []
+      listofcor: [],
+      startTime: null,
+      finalTime: null
     };
   },
   mounted() {
     this.fetchQuestions();
+    this.startTime = new Date();
   },
   methods: {
     navigateHome() {
@@ -89,13 +95,14 @@ export default {
         categories: params.categories || ''
       }).toString();
 
-      console.log("Fetching with parameters:", query);
 
-      fetch(`https://medik-cloud-deploy-fast-xxtgwkr47a-lm.a.run.app/api/get_test_questions/?${query}`)
+      fetch(`http://127.0.0.1:8081/api/get_test_questions/?${query}`)
         .then(response => response.json())
         .then(data => {
-          // console.log("Data received from API:", data);
+          //console.log("Data received from API:", data);
+
           this.questions = data.questions; // Ensure this aligns with the received JSON structure
+
           this.maxPoints = this.questions.reduce((sum, question) => sum + question.answers.length, 0);
         })
         .catch(error => {
@@ -103,104 +110,194 @@ export default {
         });
     },
     selectAnswer(questionIndex, answer) {
-
       // Initialize the answer array for the question if it does not exist
       if (!this.selectedAnswers[questionIndex]) {
-        this.$set(this.selectedAnswers, questionIndex, []);
+        this.selectedAnswers[questionIndex] = [];
       }
 
-      // Check if the answer is already selected
-      const currentAnswers = this.selectedAnswers[questionIndex];
-      const answerIndex = currentAnswers.findIndex(a => a.answer_id === answer.answer_id);
+      // Find if the answer is already selected
+      const answerIndex = this.selectedAnswers[questionIndex].findIndex(a => a.answer_id === answer.answer_id);
 
-      // If the answer is already selected, remove it (toggle off)
+      // If the answer is already selected, remove it (toggle functionality)
       if (answerIndex > -1) {
-        currentAnswers.splice(answerIndex, 1);
+        this.selectedAnswers[questionIndex].splice(answerIndex, 1);
       } else {
-        // Otherwise, add the answer to the selected list (toggle on)
-        currentAnswers.push(answer);
+        // Add the answer to the selected list with necessary data
+        this.selectedAnswers[questionIndex].push({
+          answer_id: answer.answer_id,
+          is_correct: answer.is_correct
+        });
       }
 
-      // Since we are modifying an array directly, we need to ensure the changes are reactive
-      this.$set(this.selectedAnswers, questionIndex, [...currentAnswers]);
+      // Since Vue sometimes has reactivity issues with nested data, ensure changes are reactive
+      this.$set(this.selectedAnswers, questionIndex, [...this.selectedAnswers[questionIndex]]);
     },
 
     submitAnswers() {
+
       this.submissionAttempted = true;
-      this.points = 0;  // Start with zero points
-      this.correctAnswers = {};  // Reset for new submission evaluations
-      this.incorrectDetails = [];  // Reset the incorrect details
+      this.points = 0;
+      this.correctAnswers = {};
+      this.incorrectDetails = [];
 
       this.questions.forEach((question, questionIndex) => {
         const selectedIds = (this.selectedAnswers[questionIndex] || []).map(a => a.answer_id);
-        this.correctAnswers[questionIndex] = {};  // Initialize correctness tracking for this question
+        this.correctAnswers[questionIndex] = {};
 
         question.answers.forEach(answer => {
-          // Check if the answer ID is in the selected answers
           const isSelected = selectedIds.includes(answer.answer_id);
           const isCorrect = answer.is_correct;
 
-          // Record if the selected answer is correct or not
           this.correctAnswers[questionIndex][answer.answer_id] = isSelected === isCorrect;
 
+
+          //ugly code
           if (isCorrect) {
             if (isSelected) {
-              this.points++;  // Gain a point for selecting a correct answer
+              this.points++;
             } else {
-              this.points--;  // Lose a point for not selecting a correct answer
+              this.points--;
+              this.incorrectDetails.push({
+                questionId: question.question_id,
+                answerId: answer.answer_id
+              });
             }
           } else {
             if (isSelected) {
-              this.points--;  // Lose a point for selecting a wrong answer
+              this.points--;
+              this.incorrectDetails.push({
+                questionId: question.question_id,
+                answerId: answer.answer_id
+              });
             } else {
-              this.points++;  // Gain a point for not selecting a wrong answer
+              this.points++;
             }
           }
 
-          // Collect details of incorrect answers for analysis
-          if (!this.correctAnswers[questionIndex][answer.answer_id]) {
-            this.incorrectDetails.push({
-              questionId: question.id,
-              answerId: answer.answer_id
-            });
-          }
+
         });
       });
 
       this.percentage = (this.points / this.maxPoints) * 100;  // Calculate the percentage score
+
     },
 
-    async downloadPdf() {
-      try {
-        const questionsData = {
-          questions: this.questions
+    storeData() {
+      let endTime = new Date();
+      let duration = new Date(endTime - this.startTime); // Calculate duration
+      console.log("INCORR DET",this.incorrectDetails)
+      this.finalTime = `PT${duration.getUTCHours()}H${duration.getUTCMinutes()}M${duration.getUTCSeconds()}S`;
+      if(this.$auth.loggedIn && this.$auth.user.id){
+        const scoresUrl = 'https://medik-cloud-deploy-fast-beta-first-xxtgwkr47a-lm.a.run.app/api/create_test_score/';
+        const apiUrl = 'https://medik-cloud-deploy-fast-beta-first-xxtgwkr47a-lm.a.run.app/api/store_answers/';
+
+
+        const payload = {
+          testId: this.testId,
+          userId: this.$auth.user.id,
+          answers: this.questions.map((question, index) => ({
+            questionId: question.question_id,
+            allAnswers: question.answers.map(answer => ({
+              answer_id: answer.answer_id,
+              is_correct: answer.is_correct
+            })),
+            selectedAnswers: this.selectedAnswers[index] || [],
+            incorrectAnswerIds: this.incorrectDetails.filter(detail => detail.questionId === question.question_id).map(detail => detail.answerId)
+
+          }))
+        };
+        console.log("PAYLOAD",payload)
+
+
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'  // This is necessary for the backend to parse the JSON body
+          },
+          body: JSON.stringify(payload)
+        })
+          .then(response => response.json())
+          .then(data => console.log('Success:', data))
+          .catch((error) => {
+            console.error('Error:', error);
+          });
+
+
+
+
+        const scorePayload = {
+          user_id: this.$auth.user.id,
+          test_id: this.testId,
+          score: this.points,
+          max_score: this.maxPoints,
+          duration: this.finalTime // Example duration, adjust based on actual test duration
         };
 
-        console.log(JSON.stringify(questionsData))
 
-        const response = await fetch('https://medik-cloud-deploy-fast-xxtgwkr47a-lm.a.run.app/generate_pdf_new_method/', {
+
+        fetch(scoresUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(questionsData),
+          body: JSON.stringify(scorePayload)
+        })
+          .then(response => response.json())
+          .then(data => console.log('Scores stored:', data))
+          .catch((error) => {
+            console.error('Error storing scores:', error);
+          });
+
+
+      }
+    },
+
+    async downloadPdf() {
+      try {
+        // Prepare the questions data structure to be sent to the server
+        const questionsData = {
+          questions: this.questions.map(question => ({
+            question_text: question.question_text,
+            answers: question.answers.map(answer => ({
+              answer_text: answer.answer_text,
+              is_correct: answer.is_correct // Include correctness information
+            }))
+          }))
+        };
+
+        // Log the prepared data for debugging purposes
+        //console.log(questionsData);
+
+        // Send the data to the server to generate the PDFs
+        const response = await fetch('http://127.0.0.1:8081/generate_pdf_from_loaded_questions/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(questionsData)
         });
 
+        // Check if the request was successful
         if (!response.ok) throw new Error('Network response was not ok.');
 
+        // Download the ZIP file containing the generated PDFs
         const blob = await response.blob();
         const downloadUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = downloadUrl;
-        link.setAttribute('download', 'questions.pdf');
+        link.setAttribute('download', 'test_pdfs.zip'); // Set the ZIP filename here
         document.body.appendChild(link);
         link.click();
         link.remove();
         window.URL.revokeObjectURL(downloadUrl);
+
       } catch (error) {
+        // Handle errors that occur during the PDF generation or download
         console.error('Error during PDF generation or download:', error);
+        alert('Failed to download the ZIP file. Please try again.');
       }
     },
+
 
     refreshTest() {
       this.selectedAnswers = {};  // Clear selected answers
@@ -211,8 +308,18 @@ export default {
       this.incorrectDetails = [];  // Clear details of incorrect answers
 
       this.fetchQuestions();
+      this.scrollToFirstQuestion()
 
 
+    },
+
+    scrollToFirstQuestion() {
+      if (this.questions.length > 0 && this.$refs['question-0']) {
+        const firstQuestionElement = this.$refs['question-0'][0];
+        if (firstQuestionElement) {
+          firstQuestionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
     },
 
     /*

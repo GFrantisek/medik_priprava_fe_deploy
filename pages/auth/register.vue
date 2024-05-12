@@ -45,7 +45,7 @@ export default {
     async submitForm() {
       try {
         let response = await this.$axios.$post('auth/register', this.register)
-        this.$router.replace({name: 'auth-login'})
+        await this.$router.replace({name: 'auth-login'})
       } catch (err) {
         console.log(err)
       }

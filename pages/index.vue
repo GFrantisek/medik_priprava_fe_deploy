@@ -15,7 +15,13 @@
         <!-- Check if user is authenticated -->
         <div v-if="$auth.loggedIn">
           <!-- Display logout button if user is logged in -->
-          <button @click="logout">Logout</button>
+          <button class="profile-button" @click="navigateToProfile">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-person-circle" viewBox="0 0 16 16">
+              <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+              <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+            </svg>
+          </button>
+          <button @click="logout" class="logout-button">Logout</button>
         </div>
         <div v-else>
           <!-- Display login and register links if user is not logged in -->
@@ -59,20 +65,20 @@
       <div class="test-column">
         <div class="test-container">
           <button @click="generateInteractiveTest" class="standard-test-btn">ŠTANDARDNÝ TEST</button>
-          <button @click="generateTest">Stiahnuť ako pdf</button>
+          <button @click="generateStandardTest">Stiahnuť ako pdf</button>
           <div class="custom-test">
             <div class="custom-test-title">alebo</div>
-            <div class="custom-test-inputs">
+            <form class="custom-test-inputs">
               <label for="number-of-questions">Počet otázok:</label>
-              <input type="number" id="numQuestions" v-model.number="numQuestions" min="1" />
+              <input type="number" id="numQuestions" v-model.number="numQuestions" min="1" max="1500" />
               <label for="number-of-answers">Počet odpovedí (1-8):</label>
-              <input type="number" id="numQuestions" v-model.number="numAnswers" min="1" />
+              <input type="number" id="numQuestions" v-model.number="numAnswers" min="1" max="8" />
               <label for="from-question-id">Od otázky číslo:</label>
-              <input type="number" id="startQuestion" v-model.number="startQuestion" min="1" />
+              <input type="number" id="startQuestion" v-model.number="startQuestion" min="1" max="1500" />
               <label for="to-question-id">Po otázku číslo:</label>
-              <input type="number" id="endQuestion" v-model.number="endQuestion" min="1" />
+              <input type="number" id="endQuestion" v-model.number="endQuestion" min="1" max="1500" />
               <label for="to-question-id">Výber oblastí:</label>
-            </div>
+            </form>
             <div class="custom-categories">
               <div v-for="(category, index) in allCategories" :key="index">
                 <input type="checkbox" :id="`category-${index}`" :value="category" v-model="checkedCategories">
@@ -125,18 +131,26 @@ export default {
         console.log(error)
       }
     },
+    navigateToProfile() {
+      // Redirect to the user profile using a relative path
+      window.location.href = '/auth/user';
+    },
     async generateTest() {
+      const normalizedNumQuestions = Math.max(1, Math.min(this.numQuestions, 1500));
+      const normalizedNumAnswers = Math.max(1, Math.min(this.numAnswers, 8));
+      let normalizedStartQuestion = Math.max(1, Math.min(this.startQuestion, 1500));
+      let normalizedEndQuestion = Math.max(1, Math.min(this.endQuestion, 1500));
+
       try {
         const response = await this.$axios({
-          //url: 'https://medik-cloud-i4zdozbjjq-lm.a.run.app/generate-pdf/', //deploy old
-          url: 'https://medik-cloud-deploy-fast-xxtgwkr47a-lm.a.run.app/generate-pdf/',                                        //localhost
-          method: 'GET',
-          responseType: 'blob',
-          params: {
-            numQuestions: this.numQuestions,
-            startQuestion: this.startQuestion,
-            endQuestion: this.endQuestion,
-            numAnswers: this.numAnswers,
+          url: 'https://medik-cloud-deploy-fast-beta-first-xxtgwkr47a-lm.a.run.app/generate_pdf_method_from_params/',  // Ensure this URL matches your deployment or development environment
+          method: 'POST',
+          responseType: 'blob',  // Important for handling binary data
+          data: {
+            numQuestions: normalizedNumQuestions,
+            startQuestion: normalizedStartQuestion,
+            endQuestion: normalizedEndQuestion,
+            numAnswers: normalizedNumAnswers,
             categories: this.checkedCategories.join(',')
           },
         });
@@ -144,26 +158,67 @@ export default {
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', 'tests_package.zip');
+        link.setAttribute('download', 'tests_package.zip');  // Change to reflect that it's a zip file
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
       } catch (error) {
-        console.error('Error during PDF generation or download:', error);
+        console.error('Error generating or downloading the PDF:', error);
+        alert('Failed to download the test package. Please try again.');  // Provide user feedback
       }
     },
+
+
+    async generateStandardTest() {
+      try {
+        const response = await fetch('https://medik-cloud-deploy-fast-beta-first-xxtgwkr47a-lm.a.run.app/generate-pdf-new/');
+        if (!response.ok) throw new Error('Network response was not ok.');
+        const data = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(data);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.setAttribute('download', 'test_package.zip'); // Suggest a filename for saving
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+      } catch (error) {
+        console.error('Failed to download the file:', error);
+      }
+    },
+
+
     generateInteractiveTest() {
-      this.$router.push({
-        path: '/interaktivny_test',
-        query: {
-          numQuestions: this.numQuestions.toString(),
-          startQuestion: this.startQuestion.toString(),
-          endQuestion: this.endQuestion.toString(),
-          numAnswers: this.numAnswers.toString(),
-          categories: this.checkedCategories.join(',')
-        }
-      });
+      const normalizedNumQuestions = Math.max(1, Math.min(this.numQuestions, 1500));
+      const normalizedNumAnswers = Math.max(1, Math.min(this.numAnswers, 8));
+      const normalizedStartQuestion = Math.max(1, Math.min(this.startQuestion, 1500));
+      const normalizedEndQuestion = Math.max(1, Math.min(this.endQuestion, 1500));
+
+      if (this.checkedCategories.length === 0){
+        this.$router.push({
+          path: '/interaktivny_test',
+          query: {
+            numQuestions: normalizedNumQuestions.toString(),
+            startQuestion: normalizedStartQuestion.toString(),
+            endQuestion: normalizedEndQuestion.toString(),
+            numAnswers: normalizedNumAnswers.toString(),
+            categories: this.checkedCategories.join(',')
+          }
+        });
+      }else{
+        this.$router.push({
+          path: '/interaktivny_test',
+          query: {
+            numQuestions: normalizedNumQuestions.toString(),
+            startQuestion: '1',
+            endQuestion: '1500',
+            numAnswers: normalizedNumAnswers.toString(),
+            categories: this.checkedCategories.join(',')
+          }
+        });
+      }
+
     },
   },
 
@@ -363,4 +418,47 @@ button.subject-item:hover {
     margin-bottom: 10px;
   }
 }
+
+.auth-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* Aligns items to the right but keeps them grouped */
+  padding-right: 20px; /* Adds some padding on the right if needed */
+}
+
+.profile-button, .logout-button {
+  margin-left: 10px; /* Adds spacing between the profile button and logout button */
+}
+
+.profile-button {
+  padding: 20px 20px; /* Adjust padding to match your design */
+
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.3s ease; /* Adds smooth transition for transform property */
+}
+
+.profile-button:hover {
+  transform: scale(1.2); /* Slightly enlarges the button on hover */
+}
+
+.logout-button:hover {
+  transform: scale(1.2); /* Slightly enlarges the button on hover */
+}
+
+
+.logout-button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 10px 20px; /* Adjust padding to match your design */
+  margin: 0 10px; /* Adds margin around the logout button */
+  border-radius: 5px; /* Optional: rounds the corners of the button */
+  transition: transform 0.3s ease; /* Adds smooth transition for transform property */
+
+}
+
 </style>
