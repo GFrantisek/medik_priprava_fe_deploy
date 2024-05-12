@@ -263,7 +263,7 @@ export default {
         //console.log(questionsData);
 
         // Send the data to the server to generate the PDFs
-        const response = await fetch('http://127.0.0.1:8081/generate_pdf_from_loaded_questions/', {
+        const response = await fetch('https://medik-cloud-deploy-fast-beta-first-xxtgwkr47a-lm.a.run.app/generate_pdf_from_loaded_questions/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
