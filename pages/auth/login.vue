@@ -1,6 +1,8 @@
 <template>
   <div class="login-container">
-    <h2>Login to Your Account</h2>
+    <div class="help">
+      <h2>Login to Your Account</h2>
+    </div>
     <form @submit.prevent="submitForm" class="login-form">
       <div class="form-group">
         <label for="email">Email</label>
@@ -14,6 +16,7 @@
         <button type="submit" class="submit-btn">Login</button>
         <button @click="navigateToRegister" type="button" class="register-btn">Register</button>
       </div>
+
     </form>
   </div>
 </template>
@@ -35,7 +38,7 @@ export default {
   methods: {
     async submitForm() {
       try {
-        let response = await this.$auth.loginWith('local', {data: this.login})
+        let response = await this.$auth.loginWith('local', { data: this.login })
         this.$router.replace({name: 'auth-user'})
       } catch (err) {
         console.error("Login failed:", err);
@@ -43,6 +46,9 @@ export default {
     },
     navigateToRegister() {
       this.$router.push({name: 'auth-register'});
+    },
+    navigateHome() {
+      this.$router.push('/'); // Adjust according to your route settings
     }
   }
 }
@@ -85,7 +91,7 @@ export default {
   margin-top: 20px;
 }
 
-.submit-btn, .register-btn {
+.submit-btn, .register-btn, .home-btn {
   padding: 10px 20px;
   border: none;
   border-radius: 4px;
@@ -102,11 +108,27 @@ export default {
   background-color: #f76c6c;
 }
 
+.home-btn {
+  background-color: #4CAF50; /* Green for home button to stand out */
+}
+
 .submit-btn:hover {
   background-color: #4a54e1;
 }
 
 .register-btn:hover {
   background-color: #f55555;
+}
+
+.home-btn:hover {
+  background-color: #43A047;
+}
+
+.help{
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centers content horizontally */
+
+  padding-bottom: 10px;
 }
 </style>

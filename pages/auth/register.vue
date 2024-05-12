@@ -22,6 +22,7 @@
       </div>
       <div class="form-actions">
         <button type="submit" class="submit-btn">Register</button>
+        <button @click="navigateToLogin" type="button" class="back-btn">Back to Login</button>
       </div>
     </form>
   </div>
@@ -47,11 +48,14 @@ export default {
   methods: {
     async submitForm() {
       try {
-        let response = await this.$axios.$post('auth/register', this.register)
-        await this.$router.replace({name: 'auth-login'})
+        let response = await this.$axios.$post('auth/register', this.register);
+        this.$router.replace({name: 'auth-login'});
       } catch (err) {
         console.error("Registration failed:", err);
       }
+    },
+    navigateToLogin() {
+      this.$router.push({name: 'auth-login'});
     }
   }
 }
@@ -68,25 +72,12 @@ export default {
 }
 
 .register-form h2 {
-  text-align: center;  /* Centers the title horizontally */
+  text-align: center;
   color: #333;
-  font-size: 24px;  /* Optional: Adjusts the font size for better visibility */
-  margin-top: 0;  /* Removes top margin to align it closer to the form's top edge */
-  margin-bottom: 20px;  /* Adds some space below the title for separation */
-
+  font-size: 24px;
+  margin-bottom: 20px;
 }
 
-.help{
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* Centers content horizontally */
-
-  padding-bottom: 20px;
-}
-
-.help h2{
-
-}
 .form-group {
   margin-bottom: 20px;
 }
@@ -109,17 +100,33 @@ export default {
   margin-top: 20px;
 }
 
-.submit-btn {
+.submit-btn, .back-btn {
   padding: 10px 20px;
   border: none;
   border-radius: 4px;
   color: #fff;
   background-color: #5C67F2;
   cursor: pointer;
+  margin-right: 10px;
+}
+
+.back-btn {
+  background-color: #f76c6c; /* Different color to distinguish from the submit button */
 }
 
 .submit-btn:hover {
   background-color: #4a54e1;
 }
 
+.back-btn:hover {
+  background-color: #f55555;
+}
+
+.help{
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centers content horizontally */
+
+  padding-bottom: 10px;
+}
 </style>

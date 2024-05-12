@@ -23,9 +23,9 @@
             </button>
             <button @click="logout" class="logout-button">Logout</button>
           </div>
-          <div v-else>
+          <div v-else class='login-register'>
             <!-- Display login and register links if user is not logged in -->
-            <nuxt-link to="/auth/login" >Login</nuxt-link>
+            <nuxt-link to="/auth/login"  class="helpme">Login</nuxt-link>
             <nuxt-link to="/auth/register">Register</nuxt-link>
           </div>
         </div>
@@ -234,6 +234,16 @@
   .custom-font {
     font-family: 'Montserrat', sans-serif;
     letter-spacing: 0.1em;
+  }
+  .helpme{
+    padding-right: 25px;
+  }
+  .login-register{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+
   }
 
   .navigation {
