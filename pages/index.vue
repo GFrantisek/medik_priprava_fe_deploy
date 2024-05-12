@@ -249,7 +249,7 @@ export default {
   left: 0;
   z-index: 1000;
 }
-.nav-item {
+.nav-item,  .logout-button {
   color: #fff;
   text-decoration: none;
   font-weight: bold;
@@ -425,40 +425,35 @@ button.subject-item:hover {
   justify-content: flex-end; /* Aligns items to the right but keeps them grouped */
   padding-right: 20px; /* Adds some padding on the right if needed */
 }
-
-.profile-button, .logout-button {
-  margin-left: 10px; /* Adds spacing between the profile button and logout button */
-}
-
 .profile-button {
-  padding: 20px 20px; /* Adjust padding to match your design */
-
   background: none;
   border: none;
   color: inherit;
   cursor: pointer;
+  padding: 20px 20px; /* Adjust padding to match your design */
   transition: transform 0.3s ease; /* Adds smooth transition for transform property */
 }
 
+/* Ensure no background change on hover */
 .profile-button:hover {
+  background: none; /* Explicitly set background to none on hover */
   transform: scale(1.2); /* Slightly enlarges the button on hover */
 }
 
 .logout-button:hover {
-  transform: scale(1.2); /* Slightly enlarges the button on hover */
+  background-color: #A98BFF; /* Lighter purple on hover for visibility */
+  transform: scale(1.1); /* Subtle enlargement on hover */
 }
 
-
+/* Ensure the logout button has no additional border and maintains layout */
 .logout-button {
-  background: none;
   border: none;
-  color: inherit;
   cursor: pointer;
-  padding: 10px 20px; /* Adjust padding to match your design */
-  margin: 0 10px; /* Adds margin around the logout button */
-  border-radius: 5px; /* Optional: rounds the corners of the button */
-  transition: transform 0.3s ease; /* Adds smooth transition for transform property */
-
 }
 
+/* Specific adjustments to remove spacing issues */
+.logout-button {
+  margin-left: 10px; /* Adjust if necessary for alignment */
+  margin-right: 20px; /* Adds spacing on the right end if needed */
+}
 </style>

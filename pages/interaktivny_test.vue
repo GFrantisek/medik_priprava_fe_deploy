@@ -96,7 +96,7 @@ export default {
       }).toString();
 
 
-      fetch(`http://127.0.0.1:8081/api/get_test_questions/?${query}`)
+      fetch(`https://medik-cloud-deploy-fast-beta-first-xxtgwkr47a-lm.a.run.app/api/get_test_questions/?${query}`)
         .then(response => response.json())
         .then(data => {
           //console.log("Data received from API:", data);
