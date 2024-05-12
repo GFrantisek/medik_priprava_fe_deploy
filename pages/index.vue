@@ -13,7 +13,7 @@
         <NuxtLink to="/" class="nav-item">3. LF UK</NuxtLink>
         <div class="auth-actions">
           <!-- Check if user is authenticated -->
-          <div v-if="$auth.loggedIn">
+          <div v-show="$auth.loggedIn">
             <!-- Display logout button if user is logged in -->
             <button class="profile-button" @click="navigateToProfile">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-person-circle" viewBox="0 0 16 16">
@@ -23,7 +23,7 @@
             </button>
             <button @click="logout" class="logout-button">Logout</button>
           </div>
-          <div v-else class='login-register'>
+          <div  v-show="!$auth.loggedIn" class='login-register'>
             <!-- Display login and register links if user is not logged in -->
             <nuxt-link to="/auth/login"  class="helpme">Login</nuxt-link>
             <nuxt-link to="/auth/register">Register</nuxt-link>
