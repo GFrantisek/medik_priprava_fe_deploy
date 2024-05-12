@@ -185,7 +185,6 @@ export default {
     storeData() {
       let endTime = new Date();
       let duration = new Date(endTime - this.startTime); // Calculate duration
-      console.log("INCORR DET",this.incorrectDetails)
       this.finalTime = `PT${duration.getUTCHours()}H${duration.getUTCMinutes()}M${duration.getUTCSeconds()}S`;
       if(this.$auth.loggedIn && this.$auth.user.id){
         const scoresUrl = 'https://medik-cloud-deploy-fast-beta-first-xxtgwkr47a-lm.a.run.app/api/create_test_score/';
@@ -206,7 +205,6 @@ export default {
 
           }))
         };
-        console.log("PAYLOAD",payload)
 
 
         fetch(apiUrl, {
@@ -217,9 +215,7 @@ export default {
           body: JSON.stringify(payload)
         })
           .then(response => response.json())
-          .then(data => console.log('Success:', data))
           .catch((error) => {
-            console.error('Error:', error);
           });
 
 
@@ -243,9 +239,7 @@ export default {
           body: JSON.stringify(scorePayload)
         })
           .then(response => response.json())
-          .then(data => console.log('Scores stored:', data))
           .catch((error) => {
-            console.error('Error storing scores:', error);
           });
 
 
@@ -293,7 +287,6 @@ export default {
 
       } catch (error) {
         // Handle errors that occur during the PDF generation or download
-        console.error('Error during PDF generation or download:', error);
         alert('Failed to download the ZIP file. Please try again.');
       }
     },

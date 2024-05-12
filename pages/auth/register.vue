@@ -1,24 +1,27 @@
 <template>
-  <div>
-    <form @submit.prevent="submitForm">
-      <div>
-        <label>Username</label>
-        <input type="text" v-model="register.username" placeholder="Enter your username" />
+  <div class="register-container">
+    <div class="help">
+      <h2>Create Your Account</h2>
+    </div>
+    <form @submit.prevent="submitForm" class="register-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" v-model="register.username" placeholder="Enter your username" />
       </div>
-      <div>
-        <label>Email</label>
-        <input type="text" v-model="register.email" placeholder="Enter your email" />
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="text" id="email" v-model="register.email" placeholder="Enter your email" />
       </div>
-      <div>
-        <label>Password</label>
-        <input type="password" v-model="register.password" placeholder="Create a password" />
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" v-model="register.password" placeholder="Create a password" />
       </div>
-      <div>
-        <label>Confirm Password</label>
-        <input type="password" v-model="register.password2" placeholder="Confirm your password" />
+      <div class="form-group">
+        <label for="confirm-password">Confirm Password</label>
+        <input type="password" id="confirm-password" v-model="register.password2" placeholder="Confirm your password" />
       </div>
-      <div>
-        <button type="submit">Submit</button>
+      <div class="form-actions">
+        <button type="submit" class="submit-btn">Register</button>
       </div>
     </form>
   </div>
@@ -47,7 +50,7 @@ export default {
         let response = await this.$axios.$post('auth/register', this.register)
         await this.$router.replace({name: 'auth-login'})
       } catch (err) {
-        console.log(err)
+        console.error("Registration failed:", err);
       }
     }
   }
@@ -55,50 +58,68 @@ export default {
 </script>
 
 <style scoped>
-div {
+.register-container {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  background-color: #fff;
+}
+
+.register-form h2 {
+  text-align: center;  /* Centers the title horizontally */
+  color: #333;
+  font-size: 24px;  /* Optional: Adjusts the font size for better visibility */
+  margin-top: 0;  /* Removes top margin to align it closer to the form's top edge */
+  margin-bottom: 20px;  /* Adds some space below the title for separation */
+
+}
+
+.help{
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh; /* Full height of the viewport */
-  background-color: #f4f3f8; /* Light purple background */
+  align-items: center; /* Centers content horizontally */
+
+  padding-bottom: 20px;
 }
 
-form {
-  padding: 20px;
-  border-radius: 10px;
-  background: white;
-  box-shadow: 0 4px 8px rgba(117, 117, 163, 0.25); /* Subtle shadow */
-  width: 300px; /* Fixed width */
+.help h2{
+
+}
+.form-group {
+  margin-bottom: 20px;
 }
 
-label {
+.form-group label {
+  display: block;
+  color: #666;
   margin-bottom: 5px;
-  font-size: 1rem;
-  color: #5c5470; /* Darker purple for text */
 }
 
-input[type="text"],
-input[type="password"] {
+.form-group input {
+  width: 100%;
   padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #dcdce6; /* Light purple border */
-  border-radius: 5px;
-  width: 100%; /* Full width */
-  box-sizing: border-box; /* Includes padding and border in the element's width */
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-button {
-  background-color: #6a5acd; /* Slightly vibrant purple */
-  color: white;
-  padding: 10px 15px;
+.form-actions {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.submit-btn {
+  padding: 10px 20px;
   border: none;
-  border-radius: 5px;
+  border-radius: 4px;
+  color: #fff;
+  background-color: #5C67F2;
   cursor: pointer;
-  transition: background-color 0.3s;
 }
 
-button:hover {
-  background-color: #5a4ebc; /* Darker purple on hover */
+.submit-btn:hover {
+  background-color: #4a54e1;
 }
+
 </style>
